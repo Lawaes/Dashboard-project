@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Service pour le backend API
+  backend:
+    build: ./backend
+    container_name: dashboard-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/dashboard
+    depends_on:
+      - db
+
+  # Service pour le frontend React
+  frontend:
+    build: ./frontend
+    container_name: dashboard-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  # Service pour la base de données PostgreSQL
+  db:
+    image: postgres:14
+    container_name: dashboard-db
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=dashboard
+
+  # Service pour gérer les conteneurs Docker (Portainer)
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: dashboard-portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+  # Service pour gérer les proxy et les certificats SSL (Nginx Proxy Manager)
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: dashboard-nginx
+    restart: always
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+
+volumes:
+  postgres_data:
+  portainer_data:
+  npm_data:
+  npm_letsencrypt: 
